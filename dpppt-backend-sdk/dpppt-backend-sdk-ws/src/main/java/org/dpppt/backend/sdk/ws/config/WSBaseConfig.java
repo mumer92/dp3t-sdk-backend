@@ -263,6 +263,7 @@ public abstract class WSBaseConfig implements SchedulingConfigurer, WebMvcConfig
 	public ThreadPoolTaskExecutor mvcTaskExecutor() {
 		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
 		taskExecutor.setThreadNamePrefix("mvc-task-");
+		taskExecutor.setCorePoolSize(300);
 		taskExecutor.setMaxPoolSize(1000);
 		return taskExecutor;
 	}
