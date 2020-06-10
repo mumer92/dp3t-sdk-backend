@@ -74,8 +74,8 @@ public class GaenControllerTest extends BaseControllerTest {
 	KeyVault keyVault;
 	@Autowired
 	GAENDataService gaenDataService;
-	@Value("ws.exposedlist.batchlength")
-	Long batchLength;
+
+	Long batchLength = 7200000L;
 
 	private static final Logger logger = LoggerFactory.getLogger(GaenControllerTest.class);
 
