@@ -126,7 +126,7 @@ public class GaenController {
 			@AuthenticationPrincipal
             @Documentation(description = "JWT token that can be verified by the backend server")
                     Object principal) {
-		var now = Instant.now().toEpochMilli();
+		var start = Instant.now();
 		if (!this.validateRequest.isValid(principal)) {
 			return () -> ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
@@ -208,7 +208,7 @@ public class GaenController {
 			responseBuilder.header("Authorization", "Bearer " + jwt);
 		}
 		Callable<ResponseEntity<String>> cb = () -> {
-			normalizeRequestTime(now);
+			normalizeRequestTime(start);
 			return responseBuilder.body("OK");
 		};
 		return cb;
@@ -234,7 +234,7 @@ public class GaenController {
 			@AuthenticationPrincipal
             @Documentation(description = "JWT token that can be verified by the backend server, must have been created by /v1/gaen/exposed and contain the delayedKeyDate")
                     Object principal) {
-		var now = Instant.now().toEpochMilli();
+		var start = Instant.now();
 
 		if (!validationUtils.isValidBase64Key(gaenSecondDay.getDelayedKey().getKeyData())) {
 			return () -> new ResponseEntity<>("No valid base64 key", HttpStatus.BAD_REQUEST);
@@ -268,7 +268,7 @@ public class GaenController {
 		}
 
 		return () -> {
-			normalizeRequestTime(now);
+			normalizeRequestTime(start);
 			return ResponseEntity.ok().body("OK");
 		};
 
@@ -350,13 +350,24 @@ public class GaenController {
 		return ResponseEntity.ok(dayBuckets);
 	}
 
-	private void normalizeRequestTime(long now) {
-		long after = Instant.now().toEpochMilli();
-		long duration = after - now;
-		try {
-			Thread.sleep(Math.max(requestTime.minusMillis(duration).toMillis(), 0));
-		} catch (Exception ex) {
-			logger.error("Couldn't equalize request time: {}", ex.toString());
+	/**
+	 * To avoid timing attacks where the duration of the API is used to infer what the user requested, all requests that
+	 * change the database call this method to have the same duration, so an outside attacker cannot infer anything on
+	 * the response time.
+	 * If the caller already spent too much time, a warning will be printed.
+	 *
+	 * @param start Instant of the API call
+	 */
+	private void normalizeRequestTime(Instant start) {
+		Duration timeFillUp = requestTime.minus(Duration.between(start, Instant.now()));
+		if (timeFillUp.isNegative()){
+			logger.warn("Duration of call was longer than requestTime: {}", requestTime);
+		} else {
+			try {
+				Thread.sleep(timeFillUp.toMillis());
+			} catch (Exception ex) {
+				logger.error("Couldn't equalize request time: {}", ex.toString());
+			}
 		}
 	}
 
