@@ -149,8 +149,12 @@ public class GaenController {
 			}
 			
 			if(delayTodaysKeys) {
-				// Additionally to delaying keys this feature also make sure rolling period is always set to 144 
+				// Additionally to delaying keys this feature also makes sure rolling period is always set to 144
 				// to make sure iOS 13.5.x does not ignore the TEK.
+				// This allows to check for the Google-TEKs also on iOS. Because the Rolling Proximity Identifier
+				// is based on the TEK and the unix epoch, this should work. The only downside is that iOS will
+				// not be able to optimize verification of the TEKs, because it will have to consider each TEK for
+				// a whole day.
 				key.setRollingPeriod(GaenKey.GaenKeyDefaultRollingPeriod);
 
 				var rollingStartNumberDuration = Duration.of(key.getRollingStartNumber(), GaenUnit.TenMinutes).toMillis();
